@@ -23,6 +23,10 @@ public extension UICollectionViewController {
             if numberOfItems > collectionView.numberOfItems(inSection: 0) - 1 {
                 numberOfItems = collectionView.numberOfItems(inSection: 0) - 1
             }
+            if numberOfItems < 0 {
+                numberOfItems = 0
+            }
+            
         }
         return numberOfItems
     }    

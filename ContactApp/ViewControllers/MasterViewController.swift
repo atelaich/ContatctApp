@@ -20,11 +20,19 @@ class MasterViewController: UICollectionViewController {
     private weak var selectAndScrollDelegate:SelectAndScrollDelegate?
     private var contacts:[ContactItem]?
 
-    @objc var currentlySelectedIndexPath : IndexPath {
-        didSet {
-            print("Called: did Set.The value got updated. The current value is : \(currentlySelectedIndexPath)")
+    @objc var currentlySelectedIndexPath : IndexPath { // used for configuring the "selection" state in new Cell for given index.
+        willSet {
+            let currentlySelectedCell = collectionView.cellForItem(at: currentlySelectedIndexPath)
+            currentlySelectedCell?.contentView.backgroundColor = UIColor.clear
+            
         }
-    } // used for configuring the "selection" state in new Cell for given index.
+        didSet {
+            let newlySelectedCell = collectionView.cellForItem(at: currentlySelectedIndexPath)
+            newlySelectedCell?.contentView.backgroundColor = kCellSelectionBackgroundColor
+            collectionView.setContentOffsetForCurrentScrollDirection(forVisibleRow: currentlySelectedIndexPath.row, forCellSize: cellSize, additionalOffset: -collectionView.screenMidPointXorYForCurrentScrollDirection(forCellSize: cellSize))
+            selectAndScrollDelegate?.didEndScrolling(collectionViewController: self)
+        }
+    }
     
     // MARK: initializers
     required init?(coder aDecoder: NSCoder) {
@@ -60,15 +68,6 @@ class MasterViewController: UICollectionViewController {
                                      collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
                                      collectionView.leftAnchor.constraint(equalTo: view.leftAnchor)])
         collectionView.setupDefaults(withReusableCellIdentifier: kCellReusbaleIdentifier, clipToBounds: true, enablePaging: false)
-        addObserver(self, forKeyPath: #keyPath(currentlySelectedIndexPath), options: .old, context: nil)
-    }
-    
-    
-    
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-        if keyPath == "currentlySelectedIndexPath" {
-            print("The value got updated.")
-        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -86,10 +85,23 @@ class MasterViewController: UICollectionViewController {
 
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell : UICollectionViewCell = collectionView.dequeueReusableCell(withReuseIdentifier: kCellReusbaleIdentifier, for: indexPath)
-        cell.configureForMasterView(usingContatct: contacts![indexPath.row])
-        cell.contentView.backgroundColor = indexPath == currentlySelectedIndexPath ? kCellSelectionBackgroundColor : UIColor.clear
+        if let allContacts = contacts {
+            let contact = allContacts[indexPath.row]
+            cell.configureForMasterView(usingContatct: contact)
+            
+        }
         
         return cell
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if indexPath.row == 0 || indexPath.row == collectionView.numberOfItems(inSection: 0) - 1 {
+            if currentlySelectedIndexPath.row == indexPath.row {
+                cell.contentView.backgroundColor = kCellSelectionBackgroundColor
+                collectionView.setContentOffsetForCurrentScrollDirection(forVisibleRow: currentlySelectedIndexPath.row, forCellSize: cellSize, additionalOffset: -collectionView.screenMidPointXorYForCurrentScrollDirection(forCellSize: cellSize))
+                selectAndScrollDelegate?.didEndScrolling(collectionViewController: self)
+            }
+        }
     }
     
     override func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
@@ -114,8 +126,6 @@ class MasterViewController: UICollectionViewController {
         self.selectAndScrollDelegate!.didEndScrolling(collectionViewController: self)
     }
     
-    
-    
     override func scrollViewDidScroll(_ scrollView: UIScrollView) {
         if FeatureManagerFlagScrollFromMaster == true {
             scrollViewDidScroll(scrollView: scrollView, withCellSize:cellSize, selectAndScrollDelegate: selectAndScrollDelegate, computedVisibleIndexPath:&currentlySelectedIndexPath)
@@ -124,22 +134,22 @@ class MasterViewController: UICollectionViewController {
 
     override func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         if FeatureManagerFlagScrollFromMaster == true {
-            perfomEndScrollingWithDelegate(selectAndScrollDelegate: selectAndScrollDelegate, currentSelectedIndexPath: currentlySelectedIndexPath)
+            perfomEndScrollingWithDelegate(contentOffset:scrollView.contentOffset)
         }
     }
 
     override func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         if FeatureManagerFlagScrollFromMaster == true {
             if !decelerate { // if there is not further momentum perform post requisites
-                perfomEndScrollingWithDelegate(selectAndScrollDelegate: selectAndScrollDelegate, currentSelectedIndexPath: currentlySelectedIndexPath)
+                perfomEndScrollingWithDelegate(contentOffset:scrollView.contentOffset)
             }
         }
-    }    
-
-    func perfomEndScrollingWithDelegate(selectAndScrollDelegate:SelectAndScrollDelegate?, currentSelectedIndexPath:IndexPath?) {
+    }
+    
+    func perfomEndScrollingWithDelegate(contentOffset:CGPoint) {
         if FeatureManagerFlagScrollFromMaster == true {
-            // set the right offset for selected cell with animation
-            // selectAndScrollDelegate!.didEndScrolling(collectionViewController: self)
+            let theRow = itemRowForOffset(offsetParameter: collectionView.offsetXorYForCurrentScrollDirection(usingOffset: contentOffset), lineSpacing: collectionView.flowLayout().minimumLineSpacing, cellSize: cellSize, scrollDirection: collectionView.flowLayout().scrollDirection)
+            currentlySelectedIndexPath =  IndexPath(row:theRow , section: 0)
         }
     }
 }

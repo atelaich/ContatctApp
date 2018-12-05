@@ -36,6 +36,7 @@ extension PeerViewCoordinator : SelectAndScrollDelegate {
     func didSelectItem(collectionViewController:UICollectionViewController, atIndexPath indexPath:IndexPath) {
         if let peerViewController = collectionViewController is MasterViewController ? containerViewController!.detailsViewController : containerViewController!.masterViewController {
             peerViewController.collectionView.selectItem(at: indexPath, animated: true, scrollPosition:peerViewController.collectionView.scrollPositionForCurrentScrollDirection())
+            
         }
     }
     
@@ -61,16 +62,7 @@ extension PeerViewCoordinator : SelectAndScrollDelegate {
                     additionalOffset = peerViewController.collectionView.screenMidPointXorYForCurrentScrollDirection(forCellSize: peerViewController.collectionView.flowLayout().itemSize) * -1
 
                     let computedVisibleIndexPath = IndexPath(row: visibleRowIndex, section: 0)
-                    peerViewController.collectionView.updateCellSelection(forNewIndex: computedVisibleIndexPath, oldIndexPath: (peerViewController as! MasterViewController).currentlySelectedIndexPath)
-                   // willChan
-                    
                     (peerViewController as! MasterViewController).currentlySelectedIndexPath = computedVisibleIndexPath
-                    
-                    
-                    
-                    
-                    peerViewController.collectionView.cellForItem(at: peerViewController.collectionView.indexPathsForSelectedItems!.first!)?.isSelected = false
-                    peerViewController.collectionView.cellForItem(at: computedVisibleIndexPath)?.isSelected = true
                 }
                 UIView.animate(withDuration: kCustomAnimationDuration) {
                     peerViewController.collectionView.setContentOffsetForCurrentScrollDirection(forVisibleRow: visibleRowIndex, forCellSize: peerViewControllerCellSize, additionalOffset:additionalOffset)

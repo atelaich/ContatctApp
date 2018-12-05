@@ -81,10 +81,4 @@ public extension UICollectionView {
         isPagingEnabled = enable
         register(UICollectionViewCell.self, forCellWithReuseIdentifier: cellIdentifier)
     }
-    
-    func experimtn()  {
-        let con = NSPersistentContainer
-        
-    }
-    
 }
